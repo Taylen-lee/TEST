@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智能穿搭 - MVP</title>
+  <style>
+    :root { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; background: #f6f7fb; color: #1f2937; }
+    header { background: linear-gradient(120deg,#14b8a6,#6366f1); color: white; padding: 16px; }
+    main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+    .tabs { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 16px; }
+    .tab { border: 0; border-radius: 12px; padding: 10px; background: #e5e7eb; cursor: pointer; font-weight: 600; }
+    .tab.active { background: #111827; color: #fff; }
+    .panel { display:none; background: white; border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,.06); }
+    .panel.active { display:block; }
+    .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); }
+    .card { border:1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+    .tag { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#eef2ff; margin-right:6px; }
+    select,input,button,textarea { width:100%; padding:8px; margin-top:6px; border-radius:8px; border:1px solid #d1d5db; }
+    .avatar { width:72px; height:72px; border-radius:50%; background:#d1fae5; display:flex; align-items:center; justify-content:center; font-size:24px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>智能穿搭 App（MVP Demo）</h1>
+    <p>覆盖 Today / Share / 服装库 / 我的 / Shop 五大模块</p>
+  </header>
+  <main>
+    <div class="tabs" id="tabs"></div>
+
+    <section id="today" class="panel"></section>
+    <section id="share" class="panel"></section>
+    <section id="wardrobe" class="panel"></section>
+    <section id="me" class="panel"></section>
+    <section id="shop" class="panel"></section>
+  </main>
+
+  <script>
+    const state = {
+      weather: { city: '上海', temp: 24, feelsLike: 26, condition: '多云' },
+      body: { height: 170, weight: 60, chest: 88, waist: 72, hip: 92, hair: '短发' },
+      outfit: { hat: '棒球帽', accessory: '银色项链', coat: '牛仔外套', top: '白色T恤', pants: '直筒牛仔裤', shoes: '小白鞋' },
+      options: {
+        hat: ['棒球帽','渔夫帽','无'],
+        accessory: ['银色项链','耳钉','墨镜'],
+        coat: ['牛仔外套','西装外套','防晒衣'],
+        top: ['白色T恤','黑色衬衫','针织上衣'],
+        pants: ['直筒牛仔裤','百褶裙','工装裤'],
+        shoes: ['小白鞋','乐福鞋','短靴']
+      },
+      posts: [
+        { user:'Luna', score:4.9, text:'今天这套通勤太实用了！' },
+        { user:'Ming', score:4.7, text:'颜色搭配很干净，喜欢。' }
+      ],
+      wardrobe: [],
+      vip: true
+    };
+
+    const tabConfig = [
+      ['today','Today'],['share','Share'],['wardrobe','服装库'],['me','我的'],['shop','Shop']
+    ];
+
+    function renderTabs(active='today') {
+      const tabs = document.getElementById('tabs');
+      tabs.innerHTML = tabConfig.map(([id,label])=>`<button class="tab ${id===active?'active':''}" onclick="switchTab('${id}')">${label}</button>`).join('');
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById(active).classList.add('active');
+    }
+
+    function switchTab(id){ renderTabs(id); }
+    window.switchTab = switchTab;
+
+    function renderToday(){
+      const {weather, body, outfit, options} = state;
+      const pickers = Object.keys(outfit).map(k=>`
+        <div class="card"><b>${k}</b><select onchange="updateOutfit('${k}',this.value)">${options[k].map(o=>`<option ${o===outfit[k]?'selected':''}>${o}</option>`).join('')}</select></div>
+      `).join('');
+      document.getElementById('today').innerHTML = `
+        <h2>今日穿搭</h2>
+        <div class="grid">
+          <div class="card"><h3>天气</h3><p>${weather.city} · ${weather.temp}°C（体感 ${weather.feelsLike}°C）</p><p>${weather.condition}</p></div>
+          <div class="card"><h3>身体数据</h3><p>身高 ${body.height}cm / 体重 ${body.weight}kg</p><p>三围 ${body.chest}-${body.waist}-${body.hip}</p><span class="tag">捏脸：${body.hair}</span></div>
+        </div>
+        <h3>可滑动切换单品（MVP 以选择器模拟）</h3>
+        <div class="grid">${pickers}</div>
+      `;
+    }
+
+    function updateOutfit(k,v){ state.outfit[k]=v; renderToday(); }
+    window.updateOutfit = updateOutfit;
+
+    function renderShare(){
+      const top = [...state.posts].sort((a,b)=>b.score-a.score).slice(0,20);
+      document.getElementById('share').innerHTML = `
+        <h2>社区分享</h2>
+        <p><span class="tag">评论分享</span><span class="tag">喜爱评分系统</span><span class="tag">排行榜</span></p>
+        ${state.vip ? '<p><b>VIP 模式：</b>可使用开放衣橱模板进行二次创作（权限分层）。</p>' : ''}
+        <div class="grid">
+          ${top.map((p,i)=>`<div class="card"><b>#${i+1} ${p.user}</b><p>${p.text}</p><p>评分：${p.score}</p></div>`).join('')}
+        </div>
+      `;
+    }
+
+    function renderWardrobe(){
+      const list = state.wardrobe.map((w,i)=>`<li>${w.name}（${w.season}）- 标签: ${w.tags || '无'} <button onclick="removeItem(${i})">删除</button></li>`).join('') || '<li>暂无单品</li>';
+      document.getElementById('wardrobe').innerHTML = `
+        <h2>服装库</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>上传</h3>
+            <p>支持前后左右和细节图（MVP 用文本模拟）。</p>
+            <input id="itemName" placeholder="单品名" />
+            <input id="season" placeholder="季节：春/夏/秋/冬" />
+            <input id="tags" placeholder="自定义标签（逗号分隔）" />
+            <button onclick="addItem()">添加到服装库</button>
+          </div>
+          <div class="card">
+            <h3>生成与归纳</h3>
+            <p>云端可做抠图、换色、自动按季节归档（此处展示数据结构）。</p>
+            <ul>${list}</ul>
+          </div>
+        </div>
+      `;
+    }
+
+    function addItem(){
+      const name = document.getElementById('itemName').value.trim();
+      if(!name) return alert('请输入单品名');
+      state.wardrobe.push({
+        name,
+        season: document.getElementById('season').value.trim() || '未分类',
+        tags: document.getElementById('tags').value.trim()
+      });
+      renderWardrobe();
+    }
+    function removeItem(i){ state.wardrobe.splice(i,1); renderWardrobe(); }
+    window.addItem = addItem; window.removeItem = removeItem;
+
+    function renderMe(){
+      const b = state.body;
+      document.getElementById('me').innerHTML = `
+        <h2>我的</h2>
+        <div class="grid">
+          <div class="card"><div class="avatar">👤</div><p>ID: user_001</p><p>粉丝 132 · 关注 78 · 私信已开启</p></div>
+          <div class="card"><h3>个人 body 数据</h3><p>${b.height}cm / ${b.weight}kg / ${b.chest}-${b.waist}-${b.hip}</p><p>隐私：仅好友可见</p></div>
+        </div>
+      `;
+    }
+
+    function renderShop(){
+      document.getElementById('shop').innerHTML = `
+        <h2>Shop / 商家</h2>
+        <div class="grid">
+          <div class="card"><h3>商家主页</h3><p>每个商品绑定一个标准服装图，可套在用户模型上预览。</p></div>
+          <div class="card"><h3>尺码映射</h3><p>按 S/M/L 自动调整衣长、袖长，减少试错成本。</p></div>
+        </div>
+      `;
+    }
+
+    renderTabs();
+    renderToday(); renderShare(); renderWardrobe(); renderMe(); renderShop();
+  </script>
+</body>
+</html>
